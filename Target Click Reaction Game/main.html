@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Target Click Challenge</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #e74c3c;
+            --accent-color: #2ecc71;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .game-title {
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 5px;
+        }
+        
+        .game-subtitle {
+            color: white;
+            margin-top: 0;
+            font-weight: normal;
+            margin-bottom: 20px;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            height: 450px;
+            margin: 0 auto;
+            background-color: var(--dark-color);
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .target {
+            position: absolute;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0,0,0,0.6);
+            display: none;
+            transition: transform 0.1s;
+        }
+        
+        .target:hover {
+            transform: scale(1.05);
+        }
+        
+        .target.standard {
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, #ff5252 0%, #b33939 100%);
+            border-radius: 50%;
+        }
+        
+        .target.bonus {
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, #ffb142 0%, #cc8e35 100%);
+            border-radius: 50%;
+            animation: pulse 0.8s infinite alternate;
+        }
+        
+        .target.penalty {
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, #33d9b2 0%, #218c74 100%);
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+        
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.2); }
+        }
+        
+        #scoreboard {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: rgba(44, 62, 80, 0.9);
+            color: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .stat {
+            display: flex;
+            flex-direction: column;
+            margin: 5px 15px;
+            min-width: 120px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 26px;
+            font-weight: bold;
+        }
+        
+        #start-btn {
+            padding: 15px 40px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        #start-btn:hover {
+            background-color: #27ae60;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 15px rgba(0,0,0,0.2);
+        }
+        
+        #start-btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 120px;
+            color: white;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        
+        .message {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .level-indicator {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .combo-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .instructions {
+            background-color: rgba(255,255,255,0.9);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px auto;
+            max-width: 700px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 0 15px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            border-radius: 50%;
+        }
+        
+        .legend-color.standard {
+            background: radial-gradient(circle, #ff5252 0%, #b33939 100%);
+        }
+        
+        .legend-color.bonus {
+            background: radial-gradient(circle, #ffb142 0%, #cc8e35 100%);
+        }
+        
+        .legend-color.penalty {
+            background: radial-gradient(circle, #33d9b2 0%, #218c74 100%);
+            border-radius: 0;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+        
+        .points-animation {
+            position: absolute;
+            color: white;
+            font-weight: bold;
+            font-size: 24px;
+            pointer-events: none;
+            text-shadow: 0 0 5px rgba(0,0,0,0.7);
+            animation: float-up 1s forwards;
+        }
+        
+        @keyframes float-up {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 40px;
+            z-index: 20;
+        }
+        
+        .game-over h2 {
+            margin-bottom: 20px;
+            margin-top: 0;
+        }
+        
+        .final-score {
+            font-size: 60px;
+            margin: 20px 0;
+            color: var(--primary-color);
+        }
+        
+        .highscore {
+            color: var(--accent-color);
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="game-title">Target Click Challenge</h1>
+    <p class="game-subtitle">Test your reflexes and aim!</p>
+    
+    <div id="game-container">
+        <div class="level-indicator">Level: <span id="level">1</span></div>
+        <div class="combo-indicator">Combo: <span id="combo-count">0</span>x</div>
+    </div>
+    
+    <div id="scoreboard">
+        <div class="stat">
+            <div class="stat-label">SCORE</div>
+            <div class="stat-value" id="score">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">TIME LEFT</div>
+            <div class="stat-value" id="time">45</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">REACTION</div>
+            <div class="stat-value" id="avg-reaction">0<span style="font-size: 16px">ms</span></div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">TARGETS HIT</div>
+            <div class="stat-value" id="targets-hit">0</div>
+        </div>
+    </div>
+    
+    <button id="start-btn">START GAME</button>
+    
+    <div class="instructions">
+        <h3>How to Play:</h3>
+        <p>Click on targets as quickly as possible to score points. Different targets have different values!</p>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color standard"></div>
+                <span>Standard: 1 point</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color bonus"></div>
+                <span>Bonus: 3 points (fast)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color penalty"></div>
+                <span>Avoid! -2 points</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Game variables
+        let score = 0;
+        let timeLeft = 45;
+        let gameInterval;
+        let targetTimeout;
+        let reactionTimes = [];
+        let lastTargetTime;
+        let gameActive = false;
+        let targetsHit = 0;
+        let currentLevel = 1;
+        let combo = 0;
+        let highScore = localStorage.getItem('targetClickHighScore') || 0;
+        
+        // DOM elements
+        const gameContainer = document.getElementById('game-container');
+        const scoreDisplay = document.getElementById('score');
+        const timeDisplay = document.getElementById('time');
+        const avgReactionDisplay = document.getElementById('avg-reaction');
+        const startBtn = document.getElementById('start-btn');
+        const targetsHitDisplay = document.getElementById('targets-hit');
+        const levelDisplay = document.getElementById('level');
+        const comboDisplay = document.getElementById('combo-count');
+        const comboIndicator = document.querySelector('.combo-indicator');
+        
+        // Get dimensions
+        let containerWidth = gameContainer.clientWidth;
+        let containerHeight = gameContainer.clientHeight;
+        
+        // Update dimensions on window resize
+        window.addEventListener('resize', () => {
+            containerWidth = gameContainer.clientWidth;
+            containerHeight = gameContainer.clientHeight;
+        });
+        
+        // Start button click handler
+        startBtn.addEventListener('click', startGame);
+        
+        // Create message element
+        const messageEl = document.createElement('div');
+        messageEl.className = 'message';
+        gameContainer.appendChild(messageEl);
+        
+        function showMessage(text, duration = 1500) {
+            messageEl.textContent = text;
+            messageEl.style.opacity = '1';
+            
+            setTimeout(() => {
+                messageEl.style.opacity = '0';
+            }, duration);
+        }
+        
+        function startGame() {
+            // Clear any existing targets
+            const existingTargets = document.querySelectorAll('.target');
+            existingTargets.forEach(t => t.remove());
+            
+            // Reset game state
+            score = 0;
+            timeLeft = 45;
+            reactionTimes = [];
+            gameActive = true;
+            targetsHit = 0;
+            currentLevel = 1;
+            combo = 0;
+            
+            // Update display
+            scoreDisplay.textContent = score;
+            timeDisplay.textContent = timeLeft;
+            avgReactionDisplay.textContent = '0';
+            targetsHitDisplay.textContent = '0';
+            levelDisplay.textContent = '1';
+            comboDisplay.textContent = '0';
+            comboIndicator.style.opacity = '0';
+            
+            // Disable start button during game
+            startBtn.disabled = true;
+            
+            // Start countdown
+            showCountdown(3);
+        }
+        
+        function showCountdown(count) {
+            // Create countdown element
+            const countdown = document.createElement('div');
+            countdown.className = 'countdown';
+            countdown.textContent = count;
+            gameContainer.appendChild(countdown);
+            
+            // Update countdown
+            const countdownInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdown.textContent = count;
+                } else if (count === 0) {
+                    countdown.textContent = 'GO!';
+                    setTimeout(() => {
+                        clearInterval(countdownInterval);
+                        gameContainer.removeChild(countdown);
+                        
+                        // Start game mechanics
+                        gameInterval = setInterval(updateGame, 1000);
+                        showTarget();
+                    }, 500);
+                }
+            }, 1000);
+        }
+        
+        function updateGame() {
+            timeLeft--;
+            timeDisplay.textContent = timeLeft;
+            
+            // Level progression
+            if (targetsHit >= currentLevel * 10 && currentLevel < 5) {
+                currentLevel++;
+                levelDisplay.textContent = currentLevel;
+                showMessage(`Level ${currentLevel}! Faster targets!`);
+            }
+            
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }
+        
+        function createTarget(type = 'standard') {
+            const target = document.createElement('div');
+            target.className = `target ${type}`;
+            target.dataset.type = type;
+            target.addEventListener('click', () => hitTarget(target));
+            
+            gameContainer.appendChild(target);
+            return target;
+        }
+        
+        function showTarget() {
+            if (!gameActive) return;
+            
+            // Choose target type
+            let targetType = 'standard';
+            const rand = Math.random();
+            
+            if (rand < 0.2) {
+                targetType = 'bonus';
+            } else if (rand < 0.3) {
+                targetType = 'penalty';
+            }
+            
+            // Create target
+            const target = createTarget(targetType);
+            
+            // Set target size based on level
+            const baseSize = targetType === 'bonus' ? 40 : 50;
+            const size = Math.max(baseSize - (currentLevel * 3), 25);
+            target.style.width = `${size}px`;
+            target.style.height = `${size}px`;
+            
+            // Calculate random position
+            const maxX = containerWidth - size;
+            const maxY = containerHeight - size;
+            
+            const randomX = Math.floor(Math.random() * maxX);
+            const randomY = Math.floor(Math.random() * maxY);
+            
+            // Set target position
+            target.style.left = randomX + 'px';
+            target.style.top = randomY + 'px';
+            
+            // Show the target
+            target.style.display = 'block';
+            
+            // Record the time when target appears
+            lastTargetTime = Date.now();
+            
+            // Set timeout for missed target
+            const timeout = 2000 - (currentLevel * 200);
+            targetTimeout = setTimeout(() => {
+                if (gameActive && target.parentNode) {
+                    // Target missed
+                    gameContainer.removeChild(target);
+                    resetCombo();
+                    showTarget();
+                }
+            }, timeout);
+        }
+        
+        function hitTarget(target) {
+            if (!gameActive) return;
+            
+            // Clear the timeout
+            clearTimeout(targetTimeout);
+            
+            // Calculate reaction time
+            const reactionTime = Date.now() - lastTargetTime;
+            reactionTimes.push(reactionTime);
+            
+            // Get target type
+            const targetType = target.dataset.type;
+            
+            // Update score based on target type
+            let points = 0;
+            
+            switch(targetType) {
+                case 'standard':
+                    points = 1;
+                    incrementCombo();
+                    break;
+                case 'bonus':
+                    points = 3;
+                    incrementCombo();
+                    break;
+                case 'penalty':
+                    points = -2;
+                    resetCombo();
+                    showMessage("Oops! -2 points");
+                    break;
+            }
+            
+            // Apply combo multiplier
+            if (combo >= 3) {
+                const multiplier = Math.min(Math.floor(combo / 3), 5);
+                points *= (1 + (multiplier * 0.5));
+            }
+            
+            // Update score
+            score += points;
+            scoreDisplay.textContent = Math.max(0, Math.floor(score));
+            
+            // Animate points
+            if (points !== 0) {
+                const pointsAnim = document.createElement('div');
+                pointsAnim.className = 'points-animation';
+                pointsAnim.textContent = points > 0 ? `+${points.toFixed(1)}` : points.toFixed(1);
+                pointsAnim.style.color = points > 0 ? '#2ecc71' : '#e74c3c';
+                pointsAnim.style.left = target.style.left;
+                pointsAnim.style.top = target.style.top;
+                gameContainer.appendChild(pointsAnim);
+                
+                setTimeout(() => {
+                    gameContainer.removeChild(pointsAnim);
+                }, 1000);
+            }
+            
+            // Update targets hit count
+            if (targetType !== 'penalty') {
+                targetsHit++;
+                targetsHitDisplay.textContent = targetsHit;
+            }
+            
+            // Update average reaction time
+            const avgReaction = Math.round(
+                reactionTimes.reduce((sum, time) => sum + time, 0) / reactionTimes.length
+            );
+            avgReactionDisplay.textContent = avgReaction;
+            
+            // Remove target
+            gameContainer.removeChild(target);
+            
+            // Show next target after a short delay
+            setTimeout(showTarget, 300);
+        }
+        
+        function incrementCombo() {
+            combo++;
+            comboDisplay.textContent = combo;
+            
+            if (combo >= 3) {
+                comboIndicator.style.opacity = '1';
+                
+                if (combo % 3 === 0) {
+                    showMessage(`${combo / 3}x Multiplier!`);
+                }
+            }
+        }
+        
+        function resetCombo() {
+            combo = 0;
+            comboDisplay.textContent = combo;
+            comboIndicator.style.opacity = '0';
+        }
+        
+        function endGame() {
+            // End game
+            gameActive = false;
+            clearInterval(gameInterval);
+            clearTimeout(targetTimeout);
+            
+            // Remove any remaining targets
+            const remainingTargets = document.querySelectorAll('.target');
+            remainingTargets.forEach(t => t.remove());
+            
+            // Check for high score
+            if (score > highScore) {
+                highScore = Math.floor(score);
+                localStorage.setItem('targetClickHighScore', highScore);
+            }
+            
+            // Create game over screen
+            const gameOver = document.createElement('div');
+            gameOver.className = 'game-over';
+            
+            gameOver.innerHTML = `
+                <h2>Game Over!</h2>
+                <div>Your Score:</div>
+                <div class="final-score">${Math.floor(score)}</div>
+                <div class="highscore">High Score: ${highScore}</div>
+                <div>Targets Hit: ${targetsHit}</div>
+                <div>Average Reaction: ${Math.round(
+                    reactionTimes.reduce((sum, time) => sum + time, 0) / reactionTimes.length
+                )}ms</div>
+            `;
+            
+            gameContainer.appendChild(gameOver);
+            
+            // Re-enable start button
+            startBtn.disabled = false;
+            startBtn.textContent = 'PLAY AGAIN';
+            
+            // Remove game over screen after button click
+            startBtn.addEventListener('click', () => {
+                if (gameContainer.contains(gameOver)) {
+                    gameContainer.removeChild(gameOver);
+                }
+            }, { once: true });
+        }
+    </script
+    <h13>made by hamzehbarakat and mohamed Zoubi
+    </h3> <h2>all code is on <a href="https://github.com/hamzehbarakat7 " > hamzehbarakat git hub acount</a>
+</body>
+</html>
